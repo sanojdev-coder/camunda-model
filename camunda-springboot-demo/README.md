@@ -1,0 +1,1 @@
+Starter project placeholder. Add BPMN and delegate.

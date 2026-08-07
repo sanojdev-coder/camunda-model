@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="4.12.0">
+  <bpmn:process id="order-process" name="Order Process" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1" name="Order Received">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_1" targetRef="Task_Inventory" />
+    <bpmn:serviceTask id="Task_Inventory" name="Reserve Inventory" camunda:delegateExpression="${inventoryDelegate}">
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Task_Inventory" targetRef="Gateway_Inventory" />
+    <bpmn:exclusiveGateway id="Gateway_Inventory" name="Inventory Available?">
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+      <bpmn:outgoing>Flow_InvSuccess</bpmn:outgoing>
+      <bpmn:outgoing>Flow_InvFailed</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_InvFailed" name="No" sourceRef="Gateway_Inventory" targetRef="Activity_0kdl8us">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${isValidOrder == false}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:endEvent id="EndEvent_InvFailed" name="Order Cancelled (No Stock)">
+      <bpmn:incoming>Flow_1o2anqj</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_InvSuccess" name="Yes" sourceRef="Gateway_Inventory" targetRef="Task_Payment">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${isValidOrder == true}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:serviceTask id="Task_Payment" name="Process Payment" camunda:delegateExpression="${paymentDelegate}">
+      <bpmn:incoming>Flow_InvSuccess</bpmn:incoming>
+      <bpmn:outgoing>Flow_3</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_3" sourceRef="Task_Payment" targetRef="Gateway_Payment" />
+    <bpmn:exclusiveGateway id="Gateway_Payment" name="Payment Successful?">
+      <bpmn:incoming>Flow_3</bpmn:incoming>
+      <bpmn:outgoing>Flow_PaySuccess</bpmn:outgoing>
+      <bpmn:outgoing>Flow_PayFailed</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_PayFailed" name="No" sourceRef="Gateway_Payment" targetRef="UserTask_Review">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${!paymentSuccessful}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:userTask id="UserTask_Review" name="Manual Payment Review" camunda:assignee="demo">
+      <bpmn:incoming>Flow_PayFailed</bpmn:incoming>
+      <bpmn:outgoing>Flow_ReviewComplete</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_ReviewComplete" sourceRef="UserTask_Review" targetRef="Task_Order" />
+    <bpmn:sequenceFlow id="Flow_PaySuccess" name="Yes" sourceRef="Gateway_Payment" targetRef="Task_Order">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${paymentSuccessful}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:serviceTask id="Task_Order" name="Finalize Order" camunda:delegateExpression="${orderDelegate}">
+      <bpmn:incoming>Flow_PaySuccess</bpmn:incoming>
+      <bpmn:incoming>Flow_ReviewComplete</bpmn:incoming>
+      <bpmn:outgoing>Flow_4</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_4" sourceRef="Task_Order" targetRef="Activity_19ousim" />
+    <bpmn:endEvent id="EndEvent_1" name="Order Completed">
+      <bpmn:incoming>Flow_0bsnvy1</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_0bsnvy1" sourceRef="Activity_19ousim" targetRef="EndEvent_1" />
+    <bpmn:userTask id="Activity_19ousim" name="Confirm Order Delivery" camunda:assignee="demo">
+      <bpmn:incoming>Flow_4</bpmn:incoming>
+      <bpmn:outgoing>Flow_0bsnvy1</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_1o2anqj" sourceRef="Activity_0kdl8us" targetRef="EndEvent_InvFailed" />
+    <bpmn:userTask id="Activity_0kdl8us" name="cancelled">
+      <bpmn:incoming>Flow_InvFailed</bpmn:incoming>
+      <bpmn:outgoing>Flow_1o2anqj</bpmn:outgoing>
+    </bpmn:userTask>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="order-process">
+      <bpmndi:BPMNEdge id="Flow_0bsnvy1_di" bpmnElement="Flow_0bsnvy1">
+        <di:waypoint x="1040" y="120" />
+        <di:waypoint x="1122" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_4_di" bpmnElement="Flow_4">
+        <di:waypoint x="900" y="120" />
+        <di:waypoint x="940" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_PaySuccess_di" bpmnElement="Flow_PaySuccess">
+        <di:waypoint x="705" y="120" />
+        <di:waypoint x="800" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ReviewComplete_di" bpmnElement="Flow_ReviewComplete">
+        <di:waypoint x="730" y="240" />
+        <di:waypoint x="850" y="240" />
+        <di:waypoint x="850" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_PayFailed_di" bpmnElement="Flow_PayFailed">
+        <di:waypoint x="680" y="145" />
+        <di:waypoint x="680" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_3_di" bpmnElement="Flow_3">
+        <di:waypoint x="600" y="120" />
+        <di:waypoint x="655" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_InvSuccess_di" bpmnElement="Flow_InvSuccess">
+        <di:waypoint x="445" y="120" />
+        <di:waypoint x="500" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_InvFailed_di" bpmnElement="Flow_InvFailed">
+        <di:waypoint x="420" y="145" />
+        <di:waypoint x="420" y="200" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="428" y="293" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2">
+        <di:waypoint x="340" y="120" />
+        <di:waypoint x="395" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1">
+        <di:waypoint x="188" y="120" />
+        <di:waypoint x="240" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1o2anqj_di" bpmnElement="Flow_1o2anqj">
+        <di:waypoint x="420" y="280" />
+        <di:waypoint x="420" y="332" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="152" y="102" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Inventory_di" bpmnElement="Task_Inventory">
+        <dc:Bounds x="240" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_Inventory_di" bpmnElement="Gateway_Inventory" isMarkerVisible="true">
+        <dc:Bounds x="395" y="95" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="395" y="57.5" width="50" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_InvFailed_di" bpmnElement="EndEvent_InvFailed">
+        <dc:Bounds x="402" y="332" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Payment_di" bpmnElement="Task_Payment">
+        <dc:Bounds x="500" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_Payment_di" bpmnElement="Gateway_Payment" isMarkerVisible="true">
+        <dc:Bounds x="655" y="95" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="UserTask_Review_di" bpmnElement="UserTask_Review">
+        <dc:Bounds x="630" y="200" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Order_di" bpmnElement="Task_Order">
+        <dc:Bounds x="800" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_1_di" bpmnElement="EndEvent_1">
+        <dc:Bounds x="1122" y="102" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0xox1ay_di" bpmnElement="Activity_19ousim">
+        <dc:Bounds x="940" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1plkiwr_di" bpmnElement="Activity_0kdl8us">
+        <dc:Bounds x="370" y="200" width="100" height="80" />
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
